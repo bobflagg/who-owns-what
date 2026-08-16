@@ -26,10 +26,10 @@ class PortfolioRow(NamedTuple):
         }
 
 
-def iter_portfolio_rows(conn) -> Iterable[PortfolioRow]:
+def iter_portfolio_rows(conn, add_splink_edges: bool = True) -> Iterable[PortfolioRow]:
     cur = conn.cursor(cursor_factory=DictCursor)
 
-    g = graph.build_graph(cur)
+    g = graph.build_graph(cur, add_splink_edges=add_splink_edges)
 
     # For each "connected component" (starting portfolio) we check if it's above
     # our "big" size (300 bbls currently) and then attempt to split it using

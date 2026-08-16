@@ -16,7 +16,7 @@ class ConnectedLandlordRow(NamedTuple):
     bizaddr_match_info: List[Dict[str, float]]
 
 
-def build_graph(dict_cursor) -> nx.Graph:
+def build_graph(dict_cursor, add_splink_edges: bool = False) -> nx.Graph:
     g = nx.Graph()
 
     print("Making landlord connections")
@@ -51,6 +51,10 @@ def build_graph(dict_cursor) -> nx.Graph:
                     g.add_edge(
                         nodeid, match["nodeid"], type="bizaddr", weight=match["weight"]
                     )
+                    
+    if add_splink_edges:
+        from . import splink_edges
+        n = splink_edges.add_to_graph(g, contacts, dict_cursor.connection)
 
     return g
 

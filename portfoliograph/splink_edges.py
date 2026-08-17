@@ -24,19 +24,16 @@ vetoes), so it never fuses namesakes. It exposes one function used here:
         the id of the owner entity it belongs to. Runs the full population once (~1 min).
 """
 from collections import Counter, defaultdict
-import re
 
 import networkx as nx
-from nlr import owner_index
+from nlr import normalize_name, owner_index
 
-# Splink edges outweigh name (~1.5) / address (~1.0) links so Louvain keeps a resolved
-# owner's nodes together if it splits an oversized (> MAX_SIZE) component. Tune against
-# the split behaviour (see the PR notes on Louvain resolution).
+# Two tuning levers, both safe (edges only ever ADD, never remove):
+#   * SPLINK_WEIGHT — outweighs name (~1.5) / address (~1.0) links so Louvain keeps a
+#     resolved owner's nodes together if it splits an oversized (> MAX_SIZE) component.
+#   * the resolution's recall lives in the ENGINE (owner_index's training slice; see the
+#     PR notes). Both affect *how much* consolidation, never whether namesakes get fused.
 SPLINK_WEIGHT = 10.0
-
-
-def _norm(s):
-    return re.sub(r"\s+", " ", s).strip().upper() if isinstance(s, str) else s
 
 
 def add_to_graph(g: nx.Graph, contacts, conn, weight: float = SPLINK_WEIGHT) -> int:
@@ -52,7 +49,7 @@ def add_to_graph(g: nx.Graph, contacts, conn, weight: float = SPLINK_WEIGHT) -> 
     # Map each node to an owner via the plurality owner across its bbls.
     node_owner = {}
     for c in contacts:
-        votes = Counter(owners.get((_norm(c.name), bbl)) for bbl in c.bbls)
+        votes = Counter(owners.get((normalize_name(c.name), bbl)) for bbl in c.bbls)
         votes.pop(None, None)
         if votes:
             node_owner[c.nodeid] = votes.most_common(1)[0][0]
